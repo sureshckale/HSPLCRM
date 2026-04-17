@@ -156,8 +156,10 @@ export default function App() {
         setAuthError("Login request cancelled. Please try again.");
       } else if (error.code === 'auth/popup-closed-by-user') {
         setAuthError("Login window was closed before completion.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setAuthError(`Domain Not Authorized: Please add "${window.location.hostname}" to your Firebase Console > Authentication > Settings > Authorized domains.`);
       } else {
-        setAuthError("An error occurred during sign-in. Please try again.");
+        setAuthError(`Login Error (${error.code || 'unknown'}): Please check your Firebase settings or try again.`);
       }
     } finally {
       setIsSigningIn(false);
