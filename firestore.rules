@@ -1,0 +1,118 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId} (Auth UID)
+// Fields:
+//   - uid: string
+//   - email: string
+//   - name: string
+//   - role: string (sales_rep, manager, admin, top_management, viewer)
+//   - createdAt: timestamp
+//
+// Collection: leads
+// Document ID: {leadId}
+// Fields:
+//   - companyName: string
+//   - status: string
+//   - assignedTo: string (User UID)
+//   - ... (Technical automotive fields)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || 
+             (request.auth.token.email == "sureshckale@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isManager() {
+      return hasRole('manager') || isAdmin();
+    }
+
+    function isTopManagement() {
+      return hasRole('top_management') || isManager();
+    }
+
+    function isSales() {
+      return hasRole('sales_rep');
+    }
+
+    function isViewer() {
+      return hasRole('viewer');
+    }
+
+    // ===============================================================
+    // Validation Functions
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['sales_rep', 'manager', 'admin', 'top_management', 'viewer'];
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['companyName', 'status', 'pipeline']) &&
+             data.companyName is string && data.companyName.size() < 200 &&
+             data.status in ["New", "Qualification", "RFQ Received", "Technical Feasibility", "Quotation", "Negotiation", "Sample Development", "Won", "Lost"] &&
+             data.pipeline in ["New Business", "Repeat Orders", "Development Projects"];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
+    }
+
+    match /leads/{leadId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isSales() || isManager());
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isManager() || 
+        (isSales() && resource.data.assignedTo == request.auth.uid)
+      ) && isValidLead(request.resource.data);
+      allow delete: if isAdmin();
+
+      match /activities/{activityId} {
+        allow read: if isAuthenticated();
+        // Allow anyone who can edit the lead to add activities
+        allow create: if isAuthenticated() && (
+          isAdmin() || 
+          isManager() || 
+          (isSales() && get(/databases/$(database)/documents/leads/$(leadId)).data.assignedTo == request.auth.uid)
+        );
+      }
+    }
+  }
+}

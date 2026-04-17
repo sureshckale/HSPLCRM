@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System users with role-based access control",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { 
+          "type": "string", 
+          "enum": ["sales_rep", "manager", "admin", "top_management", "viewer"],
+          "description": "Role determining access levels"
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Sales lead for automotive wiring harnesses",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "status": { 
+          "type": "string",
+          "enum": ["New", "Qualification", "RFQ Received", "Technical Feasibility", "Quotation", "Negotiation", "Sample Development", "Won", "Lost"]
+        },
+        "pipeline": {
+          "type": "string",
+          "enum": ["New Business", "Repeat Orders", "Development Projects"]
+        },
+        "assignedTo": { "type": "string", "description": "User UID of assigned sales rep" },
+        "value": { "type": "number", "description": "Estimated deal value in INR" },
+        "drawingNumber": { "type": "string" },
+        "rfqNumber": { "type": "string" },
+        "bomReference": { "type": "string" },
+        "revisionNumber": { "type": "string" },
+        "connectorType": { "type": "string" },
+        "wireSpecification": { "type": "string" },
+        "testingRequirements": { "type": "string" },
+        "applicationType": { "type": "string" },
+        "vehicleType": { "type": "string" },
+        "region": { "type": "string" },
+        "productInterest": { "type": "string" },
+        "budgetRange": { "type": "string" },
+        "urgency": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "isOem": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "lastActivityAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyName", "status", "pipeline"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Interaction log for a lead",
+      "type": "object",
+      "properties": {
+        "leadId": { "type": "string" },
+        "type": { "type": "string", "enum": ["Call", "Meeting", "Email", "Note"] },
+        "content": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["leadId", "type", "content", "createdBy", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Main lead records"
+    },
+    "/leads/{leadId}/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Activities associated with a specific lead"
+    }
+  }
+}
