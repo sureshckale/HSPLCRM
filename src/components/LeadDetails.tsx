@@ -31,7 +31,7 @@ interface LeadDetailsProps {
   onClose: () => void;
   onAddActivity: (content: string, type: string) => void;
   onUpdateStatus: (status: Lead['status']) => void;
-  aiInstance: GoogleGenAI;
+  aiInstance: GoogleGenAI | null;
 }
 
 export default function LeadDetails({ lead, activities, onClose, onAddActivity, onUpdateStatus, aiInstance }: LeadDetailsProps) {
@@ -40,6 +40,10 @@ export default function LeadDetails({ lead, activities, onClose, onAddActivity, 
   const [isAnalysing, setIsAnalysing] = useState(false);
 
   const runAnalysis = async () => {
+    if (!aiInstance) {
+      setAiAnalysis("Intelligence Engine is currently unavailable. Please check system configuration.");
+      return;
+    }
     setIsAnalysing(true);
     try {
       const response = await aiInstance.models.generateContent({

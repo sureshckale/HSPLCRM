@@ -52,8 +52,20 @@ export default function App() {
   const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
   const [users, setUsers] = useState<{ uid: string, name: string }[]>([]);
 
-  // Initialize Gemini for smart features
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  // Initialize Gemini for smart features safely
+  const ai = useMemo(() => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        console.warn('GEMINI_API_KEY is not defined. AI features will be unavailable.');
+        return null;
+      }
+      return new GoogleGenAI({ apiKey });
+    } catch (error) {
+      console.error('Failed to initialize GoogleGenAI:', error);
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'users'));
